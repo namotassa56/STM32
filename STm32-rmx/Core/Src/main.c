@@ -51,15 +51,17 @@ struct _ButMtx_Struct {
 struct _ButMtx_Struct BMX_L[4] = { { GPIOA, GPIO_PIN_9 }, { GPIOC, GPIO_PIN_7 },
 		{ GPIOB, GPIO_PIN_6 }, { GPIOA, GPIO_PIN_7 } };
 
-struct _ButMtx_Struct BMX_R[4] = { { GPIOB, GPIO_PIN_5 }, { GPIOB, GPIO_PIN_4 },
-		{ GPIOB, GPIO_PIN_10 }, { GPIOA, GPIO_PIN_8 } };
+struct _ButMtx_Struct BMX_R[3] = { { GPIOB, GPIO_PIN_5 }, { GPIOB, GPIO_PIN_4 },
+		{ GPIOB, GPIO_PIN_10 }};
 
 uint16_t ButtonState = 0;
 int x = 0;
-int starter[11] = {6,5,3,4,0,5,0,0,0,6,6};
+int starter[] = {6,5,3,4,0,5,0,0,0,6,6};
 int compare[11];
 int position = 0;
 int state = 0;
+int ch = 88;
+int iii = 0;
 uint16_t check = 0;
 /* USER CODE END PV */
 
@@ -70,6 +72,7 @@ static void MX_LPUART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void ButtonMatrixRead();
 void Checkkeypad();
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -107,7 +110,7 @@ int main(void)
   MX_GPIO_Init();
   MX_LPUART1_UART_Init();
   /* USER CODE BEGIN 2 */
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -263,12 +266,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD2_Pin PA8 */
-  GPIO_InitStruct.Pin = LD2_Pin|GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  /*Configure GPIO pin : PA0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LD2_Pin */
+  GPIO_InitStruct.Pin = LD2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA7 PA9 */
   GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_9;
@@ -289,6 +298,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PB6 */
   GPIO_InitStruct.Pin = GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -296,6 +312,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -304,6 +323,13 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+	if (GPIO_Pin == GPIO_PIN_0){
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
+		memset (compare,0,sizeof(compare));
+		position = 0;
+	}
+}
 void ButtonMatrixRead() {
 	static uint8_t X = 0;
 	for (int i = 0; i < 4; i++) {
@@ -375,16 +401,36 @@ void Checkkeypad(){
 				compare[position] = x;
 				position ++ ;
 				state = 0;
-
 				}
-
 			}
-		if(memcmp(compare,starter,sizeof(compare) == 0 && ButtonState == 2048)) {
-
+		ch = memcmp(compare,starter,sizeof(compare));
+		if((ch == 0)&& ButtonState == 2048)
+		{
+			iii = 123456;
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
 			check = 1000;
 		}
-}
+		if(ch != 0)
+		{
+			iii = 9999999;
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
+			check = 1000;
+
+		}
+//		if(memcmp(compare,starter,sizeof(compare) != 0 )) {
+//				iii = 123456;
+//				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
+//				check = 1000;
+//			}
+//		if(memcmp(compare,starter,sizeof(compare) == 0 )) {
+//			iii = 10;
+//			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
+//			check = 1000;
+//		}
+
+
+		}
+
 
 /* USER CODE END 4 */
 
